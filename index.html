@@ -2,29 +2,968 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>yoit</title>
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background-color: #064e2b;
-      color: #000000;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    h1 {
-      font-size: 80px;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChickenTalk</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg:#101512;
+  --panel:#181f1a;
+  --panel2:#202a23;
+  --green:#167744;
+  --green2:#20a45b;
+  --text:#f0f5f1;
+  --muted:#9ba99f;
+  --border:#303b33;
+  --danger:#e75c5c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif;height:100vh;overflow:hidden}
+button,input,textarea{font:inherit}
+button{cursor:pointer;border:0;border-radius:8px;padding:10px 14px;background:var(--green);color:white}
+button:hover{background:var(--green2)}
+button:disabled{opacity:.4;cursor:not-allowed}
+input,textarea{background:#101612;border:1px solid var(--border);border-radius:8px;padding:11px;color:var(--text);width:100%;outline:none}
+input:focus,textarea:focus{border-color:var(--green2)}
+textarea{resize:vertical}
+.small{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+.hidden{display:none!important}
+.danger{background:#7d2929}
+.ghost{background:var(--panel2);border:1px solid var(--border)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
+h1,h2,h3,p{margin-top:0}
+h2{font-size:20px}
+h3{font-size:15px}
+#authScreen{height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;overflow:auto}
+.authbox{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px}
+.logo{font-size:28px;font-weight:bold;color:#53d68a;margin-bottom:5px}
+.authbox form{display:grid;gap:12px}
+.authbox h2{margin-bottom:8px}
+#app{height:100vh;display:grid;grid-template-columns:245px minmax(0,1fr)}
+.sidebar{background:#141a15;border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.brand{padding:20px;font-size:21px;font-weight:bold;color:#53d68a;border-bottom:1px solid var(--border)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:10px}
+.tabs button{background:transparent;color:var(--muted);padding:10px 5px}
+.tabs button.active{background:var(--green);color:white}
+.sidecontent{padding:12px;overflow:auto;flex:1}
+.sidehead{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:12px}
+.sidehead h3{margin:0}
+.sidehead button{padding:6px 9px}
+.item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;overflow:hidden;margin-bottom:3px}
+.item:hover,.item.selected{background:var(--panel2)}
+.itemname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:bold;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.userfooter{padding:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px}
+.userfooter .itemname{font-size:13px}
+.userfooter button{padding:8px}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{height:62px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:10px}
+.topbar h2{margin:0;font-size:17px}
+.content{padding:20px;overflow:auto;flex:1;min-height:0}
+.view{display:none}
+.view.active{display:block}
+.row{display:flex;gap:9px;align-items:center}
+.row>*{min-width:0}
+.stack{display:grid;gap:10px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.list{display:grid;gap:8px}
+.result{background:var(--panel2);padding:12px;border-radius:9px;display:flex;align-items:center;gap:10px}
+.result .grow{flex:1;min-width:0}
+.result .grow p{margin:4px 0 0;overflow-wrap:anywhere}
+#chatView{height:100%;display:none;flex-direction:column;min-height:0}
+#chatView.active{display:flex}
+.chatmessages{flex:1;overflow:auto;padding:15px 20px;display:flex;flex-direction:column;gap:12px}
+.message{display:flex;gap:10px;align-items:flex-start}
+.messagebody{min-width:0;overflow-wrap:anywhere}
+.messagehead{font-size:13px;font-weight:bold;margin-bottom:4px}
+.messagehead time{font-weight:normal;color:var(--muted);margin-left:7px;font-size:11px}
+.messagebody p{margin:0;white-space:pre-wrap;line-height:1.45}
+.composer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:9px}
+.composer input{flex:1;min-width:0}
+#toast{position:fixed;bottom:20px;right:20px;max-width:350px;background:#26382c;border:1px solid #45654d;padding:13px 16px;border-radius:10px;z-index:99;display:none;overflow-wrap:anywhere}
+.modal{position:fixed;inset:0;background:#000a;display:flex;justify-content:center;align-items:center;padding:15px;z-index:50}
+.modalbox{width:100%;max-width:450px;max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:22px}
+.modalbox form{display:grid;gap:12px}
+.modalhead{display:flex;justify-content:space-between;align-items:center}
+.modalhead h2{margin:0}
+.channelnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:15px}
+.channelnav button{background:var(--panel2);border:1px solid var(--border)}
+.channelnav button.selected{background:var(--green)}
+.notice{padding:12px;background:var(--panel2);border-radius:8px;color:var(--muted);line-height:1.5}
+.badge{background:#284b35;color:#9ee9b6;border-radius:6px;padding:4px 7px;font-size:11px}
+@media(max-width:700px){
+ #app{grid-template-columns:78px minmax(0,1fr)}
+ .brand{font-size:0;padding:20px 8px;text-align:center}
+ .brand:after{content:"CT";font-size:20px}
+ .tabs{grid-template-columns:1fr;padding:5px}
+ .tabs button{font-size:11px;padding:9px 2px}
+ .sidecontent{padding:6px}
+ .sidehead{flex-direction:column}
+ .sidehead h3{font-size:10px}
+ .sidehead button{padding:5px;font-size:11px}
+ .item{padding:8px 2px;justify-content:center}
+ .itemname,.userfooter .itemname,.userfooter .small{display:none}
+ .userfooter{padding:8px;justify-content:center;flex-wrap:wrap}
+ .userfooter button{font-size:10px;padding:7px 4px}
+ .split{grid-template-columns:1fr}
+ .content{padding:12px}
+ .topbar{padding:0 12px}
+}
+</style>
 </head>
 <body>
-  <h1>yo</h1>
+
+<section id="authScreen">
+ <div class="authbox">
+  <div class="logo">ChickenTalk</div>
+  <p class="muted">Your chats. Your people. Your servers.</p>
+  <div class="tabs" style="padding:0 0 15px">
+   <button id="loginTab" class="active" type="button" onclick="showAuth('login')">Login</button>
+   <button id="signupTab" type="button" onclick="showAuth('signup')">Register</button>
+  </div>
+  <form id="authForm">
+   <input id="authEmail" type="email" placeholder="Email address" required autocomplete="email">
+   <input id="authPassword" type="password" placeholder="Password" required minlength="6" autocomplete="current-password">
+   <input id="authUsername" class="hidden" placeholder="Username" minlength="3" maxlength="24" autocomplete="username">
+   <button id="authSubmit" type="submit">Login</button>
+  </form>
+  <button class="ghost" style="width:100%;margin-top:10px" onclick="resetPassword()">Forgot password?</button>
+  <p class="small" style="margin-top:18px;margin-bottom:0">Made by hacer62828</p>
+ </div>
+</section>
+
+<section id="app" class="hidden">
+ <aside class="sidebar">
+  <div class="brand">ChickenTalk</div>
+  <div class="tabs">
+   <button id="friendsTab" class="active" onclick="switchArea('friends')">Friends</button>
+   <button id="serversTab" onclick="switchArea('servers')">Servers</button>
+  </div>
+  <div id="friendsSide" class="sidecontent">
+   <div class="sidehead"><h3>Messages</h3><button onclick="openGroupModal()">+ Group</button></div>
+   <div id="conversationList"></div>
+  </div>
+  <div id="serversSide" class="sidecontent hidden">
+   <div class="sidehead"><h3>Servers</h3><button onclick="openServerModal()">+ Create</button></div>
+   <button class="ghost" style="width:100%;margin-bottom:12px" onclick="openJoinModal()">Join server</button>
+   <div id="serverList"></div>
+  </div>
+  <div class="userfooter">
+   <div id="myAvatar" class="avatar">?</div>
+   <div class="itemname"><div id="myName">Loading...</div><div id="myHandle" class="small"></div></div>
+   <button class="ghost" title="Profile settings" onclick="openProfile()">⚙</button>
+   <button class="danger" title="Logout" onclick="logout()">↪</button>
+  </div>
+ </aside>
+
+ <main class="main">
+  <header class="topbar">
+   <h2 id="pageTitle">Friends</h2>
+   <div class="row"><span class="badge">ONLINE</span><button class="ghost" onclick="openProfile()">Profile</button></div>
+  </header>
+
+  <section id="homeView" class="content view active">
+   <div class="card" style="margin-bottom:16px">
+    <h2>Welcome to ChickenTalk</h2>
+    <p class="muted">Find friends, chat privately, make group conversations, and hang out in servers.</p>
+   </div>
+   <div class="split">
+    <div class="card stack">
+     <h3>Find people</h3>
+     <form id="searchForm" class="row">
+      <input id="friendSearch" placeholder="Search exact username..." required>
+      <button>Search</button>
+     </form>
+     <div id="searchResults" class="list"></div>
+    </div>
+    <div class="card stack">
+     <h3>Friend requests</h3>
+     <div id="friendRequests" class="list"><span class="muted">Loading...</span></div>
+    </div>
+   </div>
+   <div class="card" style="margin-top:14px">
+    <h3>Your friends</h3>
+    <div id="friendsList" class="list"><span class="muted">Loading...</span></div>
+   </div>
+  </section>
+
+  <section id="chatView" class="view">
+   <div id="chatInfo" class="content" style="padding:14px 20px;flex:0 0 auto"></div>
+   <div id="chatMembers" class="channelnav" style="padding:0 20px"></div>
+   <div id="chatMessages" class="chatmessages"></div>
+   <form id="messageForm" class="composer">
+    <input id="messageInput" maxlength="4000" placeholder="Write a message..." autocomplete="off" required>
+    <button>Send</button>
+   </form>
+  </section>
+
+  <section id="serverView" class="view content">
+   <div id="serverDetails"></div>
+   <h3>Channels</h3>
+   <div id="channelNav" class="channelnav"></div>
+   <div id="serverMessages" style="min-height:250px"></div>
+   <form id="serverMessageForm" class="composer" style="padding:14px 0;border:0">
+    <input id="serverMessageInput" maxlength="4000" placeholder="Message this channel..." required>
+    <button>Send</button>
+   </form>
+  </section>
+ </main>
+</section>
+
+<div id="modal" class="modal hidden">
+ <div class="modalbox">
+  <div class="modalhead"><h2 id="modalTitle">Settings</h2><button class="ghost" onclick="closeModal()">✕</button></div>
+  <div id="modalContent" style="margin-top:18px"></div>
+ </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://emxsxlkekskmubvyfgag.supabase.co";
+const SUPABASE_KEY = "sb_publishable_KkXFVpA6VSmFBWDVacgi0w_K4EsFMdN";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let user = null;
+let profile = null;
+let authMode = "login";
+let area = "friends";
+let activeConversation = null;
+let activeServer = null;
+let activeChannel = null;
+let messageSubscription = null;
+let serverSubscription = null;
+let authSubscription = null;
+let busy = false;
+
+const $ = id => document.getElementById(id);
+
+function escapeHTML(value) {
+ return String(value ?? "").replace(/[&<>"']/g, ch => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[ch]));
+}
+function avatarHTML(p, size=36) {
+ const name = p?.display_name || p?.username || "?";
+ return `<div class="avatar" style="width:${size}px;height:${size}px">${p?.avatar_url
+  ? `<img src="${escapeHTML(p.avatar_url)}" alt="">`
+  : escapeHTML(name.slice(0,1).toUpperCase())}</div>`;
+}
+function toast(text) {
+ const el = $("toast");
+ el.textContent = text;
+ el.style.display = "block";
+ clearTimeout(toast.timer);
+ toast.timer = setTimeout(() => el.style.display="none", 4500);
+}
+function showError(error, fallback="Something went wrong.") {
+ console.error(error);
+ toast(error?.message || fallback);
+}
+function setBusy(value) {
+ busy = value;
+ $("authSubmit").disabled = value;
+}
+function showAuth(mode) {
+ authMode = mode;
+ $("loginTab").classList.toggle("active", mode==="login");
+ $("signupTab").classList.toggle("active", mode==="signup");
+ $("authUsername").classList.toggle("hidden", mode!=="signup");
+ $("authUsername").required = mode==="signup";
+ $("authSubmit").textContent = mode==="login" ? "Login" : "Create account";
+ $("authPassword").autocomplete = mode==="login" ? "current-password" : "new-password";
+}
+$("authForm").addEventListener("submit", async e => {
+ e.preventDefault();
+ if(busy) return;
+ setBusy(true);
+ try {
+  const email = $("authEmail").value.trim();
+  const password = $("authPassword").value;
+  if(authMode==="login") {
+   const {error} = await db.auth.signInWithPassword({email,password});
+   if(error) throw error;
+  } else {
+   const username = $("authUsername").value.trim().toLowerCase();
+   if(!/^[a-z0-9_]{3,24}$/.test(username))
+    throw Error("Username must be 3–24 characters: letters, numbers, underscores.");
+   const {data,error} = await db.auth.signUp({
+    email,password,
+    options:{data:{username}}
+   });
+   if(error) throw error;
+   if(!data.session) toast("Account created. Check your email to confirm registration.");
+   else toast("Account created!");
+  }
+ } catch(err) { showError(err); }
+ finally { setBusy(false); }
+});
+async function resetPassword() {
+ const email = $("authEmail").value.trim();
+ if(!email) return toast("Enter your email address first.");
+ try {
+  const {error} = await db.auth.resetPasswordForEmail(email);
+  if(error) throw error;
+  toast("Password reset email requested.");
+ } catch(e) {showError(e);}
+}
+async function logout() {
+ await db.auth.signOut();
+}
+async function handleSession(session) {
+ user = session?.user || null;
+ if(!user) {
+  profile = null;
+  activeConversation = null;
+  activeServer = null;
+  stopSubscriptions();
+  $("app").classList.add("hidden");
+  $("authScreen").classList.remove("hidden");
+  return;
+ }
+ $("authScreen").classList.add("hidden");
+ $("app").classList.remove("hidden");
+ try {
+  await ensureProfile();
+  await refreshAll();
+ } catch(e) {showError(e);}
+}
+async function ensureProfile() {
+ let {data,error} = await db.from("profiles")
+  .select("*").eq("id",user.id).maybeSingle();
+ if(error) throw error;
+ if(!data) {
+  const suggested = user.user_metadata?.username ||
+   user.email?.split("@")[0] || "user";
+  const username = String(suggested).toLowerCase().replace(/[^a-z0-9_]/g,"_").slice(0,24) || "user";
+  const result = await db.from("profiles").insert({
+   id:user.id,username,display_name:suggested
+  }).select().single();
+  if(result.error) throw result.error;
+  data = result.data;
+ }
+ profile = data;
+ updateMyProfile();
+}
+function updateMyProfile() {
+ $("myName").textContent = profile?.display_name || profile?.username || "User";
+ $("myHandle").textContent = profile?.username ? "@"+profile.username : "";
+ $("myAvatar").innerHTML = profile?.avatar_url
+  ? `<img src="${escapeHTML(profile.avatar_url)}" alt="">`
+  : escapeHTML((profile?.display_name || profile?.username || "?").slice(0,1).toUpperCase());
+}
+async function refreshAll() {
+ await Promise.allSettled([
+  loadConversations(),loadFriendRequests(),loadFriends(),loadServers()
+ ]);
+}
+function switchArea(next) {
+ area = next;
+ $("friendsTab").classList.toggle("active",next==="friends");
+ $("serversTab").classList.toggle("active",next==="servers");
+ $("friendsSide").classList.toggle("hidden",next!=="friends");
+ $("serversSide").classList.toggle("hidden",next!=="servers");
+ showView("homeView");
+ $("pageTitle").textContent = next==="friends" ? "Friends" : "Servers";
+ if(next==="friends") {
+  loadFriendRequests();loadFriends();loadConversations();
+ } else loadServers();
+}
+function showView(id) {
+ for(const view of document.querySelectorAll(".view")) view.classList.remove("active");
+ $(id).classList.add("active");
+}
+function stopSubscriptions() {
+ if(messageSubscription) db.removeChannel(messageSubscription);
+ if(serverSubscription) db.removeChannel(serverSubscription);
+ messageSubscription = null;
+ serverSubscription = null;
+}
+function closeModal() {
+ $("modal").classList.add("hidden");
+ $("modalContent").innerHTML = "";
+}
+function openModal(title, html) {
+ $("modalTitle").textContent = title;
+ $("modalContent").innerHTML = html;
+ $("modal").classList.remove("hidden");
+}
+$("modal").addEventListener("click",e=>{
+ if(e.target===$("modal")) closeModal();
+});
+
+function openProfile() {
+ if(!profile) return;
+ openModal("Your profile",`
+ <form id="profileForm">
+  <label>Username<input id="profileUsername" minlength="3" maxlength="24" value="${escapeHTML(profile.username)}" required></label>
+  <label>Display name<input id="profileDisplay" maxlength="60" value="${escapeHTML(profile.display_name||"")}"></label>
+  <label>Avatar image URL<input id="profileAvatar" type="url" value="${escapeHTML(profile.avatar_url||"")}" placeholder="https://..."></label>
+  <label>About me<textarea id="profileBio" maxlength="300">${escapeHTML(profile.bio||"")}</textarea></label>
+  <button>Save profile</button>
+ </form>
+ <p class="small">Email: ${escapeHTML(user.email||"")}</p>`);
+ $("profileForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const username=$("profileUsername").value.trim().toLowerCase();
+  if(!/^[a-z0-9_]{3,24}$/.test(username))
+   return toast("Username must be 3–24 letters, numbers, or underscores.");
+  const patch={
+   username,
+   display_name:$("profileDisplay").value.trim(),
+   avatar_url:$("profileAvatar").value.trim()||null,
+   bio:$("profileBio").value.trim()
+  };
+  const {data,error}=await db.from("profiles").update(patch)
+   .eq("id",user.id).select().single();
+  if(error) return showError(error);
+  profile=data;updateMyProfile();closeModal();toast("Profile updated.");
+ });
+}
+
+async function searchProfiles(query) {
+ const {data,error}=await db.from("profiles").select("id,username,display_name,avatar_url,bio")
+  .ilike("username",query).neq("id",user.id).limit(20);
+ if(error) throw error;
+ return data||[];
+}
+$("searchForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const query=$("friendSearch").value.trim();
+ if(!query) return;
+ $("searchResults").innerHTML='<span class="muted">Searching...</span>';
+ try {
+  const people=await searchProfiles(query);
+  $("searchResults").innerHTML=people.length?people.map(p=>`
+   <div class="result">
+    ${avatarHTML(p)}
+    <div class="grow"><b>${escapeHTML(p.display_name||p.username)}</b>
+     <p class="small">@${escapeHTML(p.username)}</p></div>
+    <button onclick="sendFriendRequest('${p.id}')">Add</button>
+   </div>`).join(""):'<p class="muted">No matching users found.</p>';
+ } catch(e){showError(e);}
+});
+async function sendFriendRequest(id) {
+ try {
+  if(id===user.id) throw Error("You cannot add yourself.");
+  const {data,error}=await db.from("friendships").insert({
+   requester_id:user.id,addressee_id:id,status:"pending"
+  }).select().single();
+  if(error) throw error;
+  toast("Friend request sent.");
+  loadFriendRequests();loadFriends();
+ } catch(e) {
+  if(e.code==="23505") toast("A friendship or request already exists.");
+  else showError(e);
+ }
+}
+async function loadFriendRequests() {
+ if(!user) return;
+ const box=$("friendRequests");
+ try {
+  const {data,error}=await db.from("friendships").select("*")
+   .eq("addressee_id",user.id).eq("status","pending");
+  if(error) throw error;
+  const rows=data||[];
+  const ids=rows.map(x=>x.requester_id);
+  let people=[];
+  if(ids.length) {
+   const res=await db.from("profiles").select("id,username,display_name,avatar_url").in("id",ids);
+   if(res.error) throw res.error;
+   people=res.data||[];
+  }
+  box.innerHTML=rows.length?rows.map(f=>{
+   const p=people.find(x=>x.id===f.requester_id)||{username:"Unknown user"};
+   return `<div class="result">${avatarHTML(p)}
+    <div class="grow"><b>${escapeHTML(p.display_name||p.username)}</b><p class="small">@${escapeHTML(p.username)}</p></div>
+    <button onclick="respondFriend('${f.id}',true)">Accept</button>
+    <button class="danger" onclick="respondFriend('${f.id}',false)">Decline</button>
+   </div>`;
+  }).join(""):'<p class="muted">No incoming requests.</p>';
+ } catch(e){box.innerHTML='<p class="muted">Could not load requests.</p>';showError(e);}
+}
+async function respondFriend(id,accept) {
+ try {
+  const patch=accept?{status:"accepted"}:{status:"declined"};
+  const {error}=await db.from("friendships").update(patch)
+   .eq("id",id).eq("addressee_id",user.id);
+  if(error) throw error;
+  toast(accept?"Friend request accepted.":"Request declined.");
+  await Promise.all([loadFriendRequests(),loadFriends()]);
+ } catch(e){showError(e);}
+}
+async function loadFriends() {
+ if(!user) return;
+ const box=$("friendsList");
+ try {
+  const {data,error}=await db.from("friendships").select("*")
+   .eq("status","accepted")
+   .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+  if(error) throw error;
+  const rows=data||[];
+  const ids=[...new Set(rows.map(f=>f.requester_id===user.id?f.addressee_id:f.requester_id))];
+  let people=[];
+  if(ids.length) {
+   const res=await db.from("profiles").select("id,username,display_name,avatar_url").in("id",ids);
+   if(res.error) throw res.error;
+   people=res.data||[];
+  }
+  box.innerHTML=ids.length?people.map(p=>`
+   <div class="result">${avatarHTML(p)}
+    <div class="grow"><b>${escapeHTML(p.display_name||p.username)}</b><p class="small">@${escapeHTML(p.username)}</p></div>
+    <button onclick="startDM('${p.id}')">Message</button>
+   </div>`).join(""):'<p class="muted">Add someone to start building your friends list.</p>';
+ } catch(e){box.innerHTML='<p class="muted">Could not load friends.</p>';showError(e);}
+}
+
+async function loadConversations() {
+ if(!user) return;
+ const box=$("conversationList");
+ try {
+  const {data:members,error}=await db.from("conversation_members")
+   .select("conversation_id").eq("user_id",user.id);
+  if(error) throw error;
+  const ids=[...new Set((members||[]).map(m=>m.conversation_id))];
+  if(!ids.length) {box.innerHTML='<p class="small muted">No conversations yet.</p>';return;}
+  const res=await db.from("conversations").select("*").in("id",ids).order("created_at",{ascending:false});
+  if(res.error) throw res.error;
+  const conversations=res.data||[];
+  const rendered=[];
+  for(const c of conversations) {
+   let label=c.type==="group"?"Group chat":"Direct message";
+   let sub="";
+   if(c.type==="direct") {
+    const mr=await db.from("conversation_members").select("user_id")
+     .eq("conversation_id",c.id).neq("user_id",user.id);
+    if(mr.error) throw mr.error;
+    const other=mr.data?.[0]?.user_id;
+    if(other) {
+     const pr=await db.from("profiles").select("username,display_name")
+      .eq("id",other).maybeSingle();
+     if(pr.data) label=pr.data.display_name||pr.data.username;
+     sub=pr.data?.username?"@"+pr.data.username:"";
+    }
+   } else {
+    const mr=await db.from("conversation_members").select("user_id").eq("conversation_id",c.id);
+    if(mr.error) throw mr.error;
+    sub=(mr.data||[]).length+" members";
+   }
+   rendered.push(`<div class="item ${activeConversation?.id===c.id?"selected":""}" onclick="openConversation('${c.id}')">
+    <div class="avatar">${c.type==="group"?"G":"@"}</div>
+    <div class="itemname">${escapeHTML(label)}<div class="small">${escapeHTML(sub)}</div></div>
+   </div>`);
+  }
+  box.innerHTML=rendered.join("");
+ } catch(e){box.innerHTML='<p class="small muted">Could not load chats.</p>';showError(e);}
+}
+async function createConversation(type,memberIds) {
+ const unique=[...new Set([user.id,...memberIds])];
+ if(type==="direct"&&unique.length!==2) throw Error("A direct message needs two users.");
+ const {data:conversation,error}=await db.from("conversations")
+  .insert({type,created_by:user.id}).select().single();
+ if(error) throw error;
+ const {error:memberError}=await db.from("conversation_members")
+  .insert(unique.map(id=>({conversation_id:conversation.id,user_id:id})));
+ if(memberError) throw memberError;
+ await loadConversations();
+ return conversation;
+}
+async function startDM(otherId) {
+ try {
+  const {data:existing,error}=await db.from("conversation_members")
+   .select("conversation_id").eq("user_id",user.id);
+  if(error) throw error;
+  const ids=(existing||[]).map(x=>x.conversation_id);
+  if(ids.length) {
+   const {data:others,error:e2}=await db.from("conversation_members")
+    .select("conversation_id").eq("user_id",otherId).in("conversation_id",ids);
+   if(e2) throw e2;
+   if(others?.length) {
+    const {data:cs,error:e3}=await db.from("conversations").select("*")
+     .eq("type","direct").in("id",others.map(x=>x.conversation_id));
+    if(e3) throw e3;
+    const {data:friend,error:e4}=await db.from("friendships").select("id")
+     .eq("status","accepted")
+     .or(`and(requester_id.eq.${user.id},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${user.id})`);
+    if(e4) throw e4;
+    const candidate=(cs||[]).find(c=>c.type==="direct");
+    if(candidate) return openConversation(candidate.id);
+   }
+  }
+  const f=await db.from("friendships").select("id").eq("status","accepted")
+   .or(`and(requester_id.eq.${user.id},addressee_id.eq.${otherId}),and(requester_id.eq.${otherId},addressee_id.eq.${user.id})`);
+  if(f.error) throw f.error;
+  if(!f.data?.length) throw Error("You must be friends before starting a direct message.");
+  const c=await createConversation("direct",[otherId]);
+  await openConversation(c.id);
+ } catch(e){showError(e);}
+}
+function openGroupModal() {
+ openModal("Create group chat",`
+ <form id="groupForm">
+  <label>Member usernames (comma-separated)<input id="groupUsers" placeholder="alex, sam, taylor" required></label>
+  <label>Group name (optional)<input id="groupName" maxlength="60" placeholder="Weekend crew"></label>
+  <button>Create group</button>
+ </form>`);
+ $("groupForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  try {
+   const names=$("groupUsers").value.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+   if(!names.length) throw Error("Enter at least one username.");
+   const {data:people,error}=await db.from("profiles").select("id,username").in("username",names);
+   if(error) throw error;
+   const found=new Set((people||[]).map(p=>p.username.toLowerCase()));
+   const missing=names.filter(n=>!found.has(n));
+   if(missing.length) throw Error("Unknown username(s): "+missing.join(", "));
+   const {data:friends,error:fe}=await db.from("friendships").select("*")
+    .eq("status","accepted").or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+   if(fe) throw fe;
+   const friendIds=new Set((friends||[]).map(f=>f.requester_id===user.id?f.addressee_id:f.requester_id));
+   const notFriends=people.filter(p=>!friendIds.has(p.id));
+   if(notFriends.length) throw Error("Add these users as friends first: "+notFriends.map(p=>p.username).join(", "));
+   const c=await createConversation("group",people.map(p=>p.id));
+   closeModal();
+   toast("Group created. "+($("groupName")?.value||""));
+   await openConversation(c.id);
+  } catch(err){showError(err);}
+ });
+}
+async function openConversation(id) {
+ try {
+  stopSubscriptions();
+  const {data:c,error}=await db.from("conversations").select("*").eq("id",id).single();
+  if(error) throw error;
+  activeConversation=c;
+  activeServer=null;activeChannel=null;
+  showView("chatView");
+  $("pageTitle").textContent=c.type==="group"?"Group chat":"Direct message";
+  $("chatInfo").innerHTML=`<h2>${escapeHTML(c.type==="group"?"Group conversation":"Direct conversation")}</h2>`;
+  $("chatMembers").innerHTML="";
+  await loadConversationMembers();
+  await loadDirectMessages();
+  messageSubscription=db.channel("direct-"+id+"-"+user.id)
+   .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:`conversation_id=eq.${id}`},payload=>{
+    renderDirectMessage(payload.new);
+   }).subscribe();
+  await loadConversations();
+ } catch(e){showError(e);}
+}
+async function loadConversationMembers() {
+ if(!activeConversation) return;
+ const {data:members,error}=await db.from("conversation_members").select("user_id")
+  .eq("conversation_id",activeConversation.id);
+ if(error) throw error;
+ const ids=(members||[]).map(m=>m.user_id);
+ const {data:people,error:e}=await db.from("profiles")
+  .select("id,username,display_name,avatar_url").in("id",ids);
+ if(e) throw e;
+ const names=people||[];
+ if(activeConversation.type==="direct") {
+  const p=names.find(x=>x.id!==user.id);
+  $("chatInfo").innerHTML=`<div class="row">${avatarHTML(p,42)}<div><h2>${escapeHTML(p?.display_name||p?.username||"Direct message")}</h2><div class="small">@${escapeHTML(p?.username||"")}</div></div></div>`;
+ } else {
+  $("chatInfo").innerHTML=`<h2>Group chat</h2><p class="small">${names.map(p=>"@"+p.username).map(escapeHTML).join(", ")}</p>`;
+ }
+}
+async function loadDirectMessages() {
+ const box=$("chatMessages");
+ box.innerHTML="";
+ const {data,error}=await db.from("messages").select("*")
+  .eq("conversation_id",activeConversation.id).order("created_at",{ascending:true}).limit(300);
+ if(error) throw error;
+ for(const m of data||[]) await renderDirectMessage(m,false);
+ box.scrollTop=box.scrollHeight;
+}
+async function renderDirectMessage(m,scroll=true) {
+ if(!activeConversation||m.conversation_id!==activeConversation.id) return;
+ if(document.querySelector(`[data-message-id="${CSS.escape(m.id)}"]`)) return;
+ let p=null;
+ if(m.sender_id===user.id) p=profile;
+ else {
+  const {data}=await db.from("profiles").select("username,display_name,avatar_url").eq("id",m.sender_id).maybeSingle();
+  p=data;
+ }
+ const box=$("chatMessages");
+ const div=document.createElement("div");
+ div.className="message";
+ div.dataset.messageId=m.id;
+ const name=p?.display_name||p?.username||"User";
+ div.innerHTML=`${avatarHTML(p)}<div class="messagebody"><div class="messagehead">${escapeHTML(name)}<time>${new Date(m.created_at).toLocaleString()}</time></div><p>${escapeHTML(m.content)}</p></div>`;
+ box.appendChild(div);
+ if(scroll) box.scrollTop=box.scrollHeight;
+}
+$("messageForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(!activeConversation) return toast("Open a conversation first.");
+ const content=$("messageInput").value.trim();
+ if(!content) return;
+ $("messageInput").value="";
+ try {
+  const {data,error}=await db.from("messages").insert({
+   conversation_id:activeConversation.id,sender_id:user.id,content
+  }).select().single();
+  if(error) throw error;
+  await renderDirectMessage(data);
+ } catch(err){$("messageInput").value=content;showError(err);}
+});
+
+async function loadServers() {
+ if(!user) return;
+ try {
+  const {data:members,error}=await db.from("server_members").select("server_id")
+   .eq("user_id",user.id);
+  if(error) throw error;
+  const ids=[...new Set((members||[]).map(m=>m.server_id))];
+  if(!ids.length) {$("serverList").innerHTML='<p class="small muted">No servers yet.</p>';return;}
+  const {data:servers,error:e}=await db.from("servers").select("*").in("id",ids).order("name");
+  if(e) throw e;
+  $("serverList").innerHTML=(servers||[]).map(s=>`
+   <div class="item ${activeServer?.id===s.id?"selected":""}" onclick="openServer('${s.id}')">
+    <div class="avatar">${escapeHTML(s.name.slice(0,1).toUpperCase())}</div>
+    <div class="itemname">${escapeHTML(s.name)}</div>
+   </div>`).join("");
+ } catch(e){showError(e);}
+}
+function openServerModal() {
+ openModal("Create server",`
+ <form id="createServerForm">
+  <label>Server name<input id="newServerName" maxlength="80" required placeholder="My server"></label>
+  <label>Description<textarea id="newServerDescription" maxlength="300" placeholder="What's this server about?"></textarea></label>
+  <button>Create server</button>
+ </form>`);
+ $("createServerForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  try {
+   const name=$("newServerName").value.trim();
+   const description=$("newServerDescription").value.trim();
+   const invite_code=crypto.randomUUID().replace(/-/g,"").slice(0,12);
+   const {data:s,error}=await db.from("servers").insert({
+    name,description,invite_code,owner_id:user.id
+   }).select().single();
+   if(error) throw error;
+   const {error:me}=await db.from("server_members").insert({
+    server_id:s.id,user_id:user.id,role:"owner"
+   });
+   if(me&&me.code!=="23505") throw me;
+   const {data:channels,error:ce}=await db.from("server_channels").select("id")
+    .eq("server_id",s.id).limit(1);
+   if(ce) throw ce;
+   if(!channels?.length) {
+    const {error:ch}=await db.from("server_channels").insert({server_id:s.id,name:"general"});
+    if(ch) throw ch;
+   }
+   closeModal();toast("Server created.");
+   await loadServers();await openServer(s.id);
+  } catch(err){showError(err);}
+ });
+}
+function openJoinModal() {
+ openModal("Join a server",`
+ <form id="joinServerForm">
+  <label>Invite code<input id="joinCode" required placeholder="Enter invite code"></label>
+  <button>Join server</button>
+ </form>`);
+ $("joinServerForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  try {
+   const code=$("joinCode").value.trim();
+   const {data:s,error}=await db.from("servers").select("*").eq("invite_code",code).maybeSingle();
+   if(error) throw error;
+   if(!s) throw Error("Server not found. Check the invite code.");
+   const {error:joinError}=await db.from("server_members").insert({server_id:s.id,user_id:user.id,role:"member"});
+   if(joinError&&joinError.code!=="23505") throw joinError;
+   closeModal();toast("Joined "+s.name);
+   await loadServers();await openServer(s.id);
+  } catch(err){showError(err);}
+ });
+}
+async function openServer(id) {
+ try {
+  stopSubscriptions();
+  const {data:s,error}=await db.from("servers").select("*").eq("id",id).single();
+  if(error) throw error;
+  activeServer=s;activeChannel=null;activeConversation=null;
+  showView("serverView");
+  $("pageTitle").textContent=s.name;
+  $("serverDetails").innerHTML=`
+   <div class="card" style="margin-bottom:16px">
+    <div class="row" style="justify-content:space-between">
+     <div><h2>${escapeHTML(s.name)}</h2><p class="muted">${escapeHTML(s.description||"No description.")}</p></div>
+     <button class="ghost" onclick="showServerSettings()">Server settings</button>
+    </div>
+   </div>`;
+  const {data:channels,error:ce}=await db.from("server_channels").select("*")
+   .eq("server_id",id).order("name");
+  if(ce) throw ce;
+  $("channelNav").innerHTML=(channels||[]).map(ch=>`
+   <button class="${activeChannel?.id===ch.id?"selected":""}" onclick="openChannel('${ch.id}')"># ${escapeHTML(ch.name)}</button>`).join("")+
+   `<button onclick="createChannel()">+ Channel</button>`;
+  await loadServers();
+  if(channels?.length) await openChannel(channels[0].id);
+  else {
+   $("serverMessages").innerHTML='<p class="notice">This server has no channels yet. Create one to start chatting.</p>';
+  }
+ } catch(e){showError(e);}
+}
+function showServerSettings() {
+ if(!activeServer) return;
+ openModal("Server settings",`
+ <div class="stack">
+  <p><b>${escapeHTML(activeServer.name)}</b></p>
+  <p class="small">Invite code</p>
+  <div class="row"><input id="serverInvite" readonly value="${escapeHTML(activeServer.invite_code)}"><button onclick="copyInvite()">Copy</button></div>
+  <button class="ghost" onclick="showServerMembers()">View members</button>
+ </div>`);
+}
+async function copyInvite() {
+ try {
+  await navigator.clipboard.writeText(activeServer.invite_code);
+  toast("Invite code copied.");
+ } catch(e) {toast("Invite code: "+activeServer.invite_code);}
+}
+async function showServerMembers() {
+ if(!activeServer) return;
+ try {
+  const {data:members,error}=await db.from("server_members").select("user_id,role")
+   .eq("server_id",activeServer.id);
+  if(error) throw error;
+  const ids=(members||[]).map(m=>m.user_id);
+  const {data:people,error:pe}=await db.from("profiles").select("id,username,display_name,avatar_url").in("id",ids);
+  if(pe) throw pe;
+  openModal("Server members",`
+   <div class="list">${(members||[]).map(m=>{
+    const p=(people||[]).find(x=>x.id===m.user_id)||{username:"Unknown"};
+    return `<div class="result">${avatarHTML(p)}<div class="grow"><b>${escapeHTML(p.display_name||p.username)}</b><p class="small">@${escapeHTML(p.username)}</p></div><span class="badge">${escapeHTML(m.role)}</span></div>`;
+   }).join("")}</div>`);
+ } catch(e){showError(e);}
+}
+async function createChannel() {
+ if(!activeServer) return;
+ openModal("Create channel",`
+ <form id="channelForm">
+  <label>Channel name<input id="channelName" maxlength="50" pattern="[A-Za-z0-9_-]+" required placeholder="announcements"></label>
+  <button>Create channel</button>
+ </form>`);
+ $("channelForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const name=$("channelName").value.trim().toLowerCase();
+  try {
+   const {error}=await db.from("server_channels").insert({server_id:activeServer.id,name});
+   if(error) throw error;
+   closeModal();toast("Channel created.");
+   await openServer(activeServer.id);
+  } catch(err){showError(err);}
+ });
+}
+async function openChannel(id) {
+ if(!activeServer) return;
+ try {
+  if(serverSubscription) db.removeChannel(serverSubscription);
+  serverSubscription=null;
+  const {data:ch,error}=await db.from("server_channels").select("*").eq("id",id).single();
+  if(error) throw error;
+  activeChannel=ch;
+  $("channelNav").querySelectorAll("button").forEach(b=>{
+   b.classList.toggle("selected",b.textContent.trim()==="# "+ch.name);
+  });
+  $("pageTitle").textContent=activeServer.name+" / #"+ch.name;
+  await loadServerMessages();
+  serverSubscription=db.channel("server-"+activeServer.id+"-"+id)
+   .on("postgres_changes",{event:"INSERT",schema:"public",table:"server_messages",filter:`channel_id=eq.${id}`},payload=>{
+    if(activeServer?.id===payload.new.server_id&&activeChannel?.id===payload.new.channel_id)
+     renderServerMessage(payload.new);
+   }).subscribe();
+ } catch(e){showError(e);}
+}
+async function loadServerMessages() {
+ const box=$("serverMessages");
+ box.innerHTML="";
+ const {data,error}=await db.from("server_messages").select("*")
+  .eq("server_id",activeServer.id).eq("channel_id",activeChannel.id)
+  .order("created_at",{ascending:true}).limit(300);
+ if(error) throw error;
+ for(const m of data||[]) await renderServerMessage(m,false);
+ box.scrollTop=box.scrollHeight;
+}
+async function renderServerMessage(m,scroll=true) {
+ if(!activeServer||!activeChannel||m.server_id!==activeServer.id||m.channel_id!==activeChannel.id) return;
+ if(document.querySelector(`[data-server-message-id="${CSS.escape(m.id)}"]`)) return;
+ let p=null;
+ if(m.sender_id===user.id) p=profile;
+ else {
+  const {data}=await db.from("profiles").select("username,display_name,avatar_url")
+   .eq("id",m.sender_id).maybeSingle();
+  p=data;
+ }
+ const box=$("serverMessages");
+ const div=document.createElement("div");
+ div.className="message";
+ div.dataset.serverMessageId=m.id;
+ div.style.marginBottom="14px";
+ div.innerHTML=`${avatarHTML(p)}<div class="messagebody"><div class="messagehead">${escapeHTML(p?.display_name||p?.username||"User")}<time>${new Date(m.created_at).toLocaleString()}</time></div><p>${escapeHTML(m.content)}</p></div>`;
+ box.appendChild(div);
+ if(scroll) box.scrollTop=box.scrollHeight;
+}
+$("serverMessageForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ if(!activeServer||!activeChannel) return toast("Open a server channel first.");
+ const content=$("serverMessageInput").value.trim();
+ if(!content) return;
+ $("serverMessageInput").value="";
+ try {
+  const {data,error}=await db.from("server_messages").insert({
+   server_id:activeServer.id,channel_id:activeChannel.id,sender_id:user.id,content
+  }).select().single();
+  if(error) throw error;
+  await renderServerMessage(data);
+ } catch(err){$("serverMessageInput").value=content;showError(err);}
+});
+
+// Optional small sound effects; no external audio files required.
+function playTone(freq=520) {
+ try {
+  const C=window.AudioContext||window.webkitAudioContext;
+  if(!C) return;
+  const ctx=new C(),osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.frequency.value=freq;osc.type="sine";
+  gain.gain.setValueAtTime(.08,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.16);
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.start();osc.stop(ctx.currentTime+.17);
+  osc.onended=()=>ctx.close();
+ } catch(e){console.warn(e);}
+}
+window.playTone=playTone;
+window.showAuth=showAuth;
+window.resetPassword=resetPassword;
+window.logout=logout;
+window.switchArea=switchArea;
+window.openProfile=openProfile;
+window.sendFriendRequest=sendFriendRequest;
+window.respondFriend=respondFriend;
+window.startDM=startDM;
+window.openGroupModal=openGroupModal;
+window.openConversation=openConversation;
+window.openServerModal=openServerModal;
+window.openJoinModal=openJoinModal;
+window.openServer=openServer;
+window.showServerSettings=showServerSettings;
+window.showServerMembers=showServerMembers;
+window.copyInvite=copyInvite;
+window.createChannel=createChannel;
+window.openChannel=openChannel;
+
+db.auth.onAuthStateChange((event,session)=>{
+ // Defer app database requests until Supabase finishes its auth callback.
+ setTimeout(()=>handleSession(session),0);
+});
+db.auth.getSession().then(({data,error})=>{
+ if(error) showError(error);
+ else handleSession(data.session);
+});
+</script>
 </body>
 </html>
-made by hacer62828
